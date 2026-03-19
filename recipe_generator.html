@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Recipe Generator</title>
+    <style>
+        /* --- CSS Styling (Visual Frontend) --- */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #3498db;
+            text-align: center;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        button {
+            background-color: #2ecc71;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #27ae60;
+        }
+        #results-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #bdc3c7;
+        }
+        .recipe-card {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .recipe-card h3 {
+            color: #e74c3c;
+            margin-top: 0;
+        }
+        .recipe-meta span {
+            display: inline-block;
+            margin-right: 15px;
+            font-style: italic;
+            color: #95a5a6;
+        }
+        .ingredients ul, .steps ol {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Interactive Recipe Generator</h1>
+        
+        <div class="input-section">
+            <h2>Define Your Constraints</h2>
+
+            <div>
+                <label for="ingredients">1. Available Ingredients (comma-separated):</label>
+                <input type="text" id="ingredients" placeholder="e.g., chicken, onion, pasta, lemon, quinoa">
+            </div>
+
+            <div>
+                <label for="tags">2. Required Tags/Restrictions (comma-separated):</label>
+                <input type="text" id="tags" placeholder="e.g., vegan, fast, spicy, gluten-free">
+            </div>
+            
+            <div>
+                <label for="maxTime">3. Maximum Cooking Time (minutes):</label>
+                <input type="number" id="maxTime" value="45" min="10">
+            </div>
+
+            <button onclick="generateRecipe()">GENERATE RECIPES</button>
+        </div>
+
+        <div id="results-container">
+            <h2>Matching Recipes:</h2>
+            <p id="initial-message">Enter your constraints and click "Generate" above.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- JAVASCRIPT LOGIC (The Frontend Bridge & Simulation) ---
+
+        // 1. SIMULATED BACKEND KNOWLEDGE BASE (The Data Layer)
+        const recipeDatabase = [
+            {
+                title: "Mediterranean Quinoa Salad",
+                cuisine: "Mediterranean",
+                timeMinutes: 20,
+                requiredIngredients: ["quinoa", "cucumber", "tomato", "lemon", "olive oil"],
+                tags: ["vegan", "fast", "gluten-free"],
+                steps: ["Boil quinoa.", "Chop vegetables.", "Mix all with lemon and oil and chill."]
+            },
+            {
+                title: "Spicy Chicken Curry",
+                cuisine: "Indian",
+                timeMinutes: 45,
+                requiredIngredients: ["chicken", "onion", "ginger", "yogurt", "curry powder"],
+                tags: ["non-vegetarian", "spicy"],
+                steps: ["Sauté onions until soft.", "Add chicken and spices, stirring well.", "Simmer with yogurt for 30 minutes."]
+            },
+            {
+                title: "Simple Creamy Pasta",
+                cuisine: "Italian",
+                timeMinutes: 25,
+                requiredIngredients: ["pasta", "cream", "butter", "garlic", "parmesan"],
+                tags: ["vegetarian", "fast"],
+                steps: ["Boil pasta until al dente.", "Melt butter and garlic for sauce.", "Toss pasta in sauce and stir in parmesan."]
+            },
+            {
+                title: "Garlic Butter Steak",
+                cuisine: "Western",
+                timeMinutes: 15,
+                requiredIngredients: ["steak", "butter", "garlic", "salt", "pepper"],
+                tags: ["fast", "high-protein"],
+                steps: ["Season steak.", "Sear steak in pan.", "Baste with garlic butter for 5 minutes."]
+            }
+        ];
+
+        // Helper function to process comma-separated text into a Set
+        function processInput(inputString) {
+            if (!inputString) return new Set();
+            return new Set(
+                inputString
+                    .toLowerCase()
+                    .split(',')
+                    .map(item => item.trim())
+                    .filter(item => item !== "")
+            );
+        }
+
+        // 2. THE BRIDGE FUNCTION (Simulated API Call)
+        function generateRecipe() {
+            // A. Get Input from HTML (Frontend Job)
+            const ingredientsInput = document.getElementById('ingredients').value;
+            const tagsInput = document.getElementById('tags').value;
+            const maxTimeInput = parseInt(document.getElementById('maxTime').value);
+            
+            const availableIngredients = processInput(ingredientsInput);
+            const requiredTags = processInput(tagsInput);
+            const maxTime = isNaN(maxTimeInput) ? Infinity : maxTimeInput;
+
+            // B. Run Backend Logic (Filtering/Constraint Satisfaction)
+            const matchingRecipes = recipeDatabase.filter(recipe => {
+                // 1. Time Constraint Check
+                if (recipe.timeMinutes > maxTime) {
+                    return false;
+                }
+
+                // 2. Dietary/Style Tag Check (Recipe must contain ALL required tags)
+                for (const requiredTag of requiredTags) {
+                    if (!recipe.tags.includes(requiredTag)) {
+                        return false;
+                    }
+                }
+
+                // 3. Ingredient Availability Check (Must have ALL required ingredients)
+                for (const requiredIng of recipe.requiredIngredients) {
+                    if (!availableIngredients.has(requiredIng)) {
+                        // In a real generator, you might calculate a match score instead of a binary check.
+                        return false; 
+                    }
+                }
+
+                return true; // All constraints satisfied
+            });
+
+            // C. Display Results (Frontend Job)
+            displayResults(matchingRecipes);
+        }
+
+        // 3. DISPLAY FUNCTION (Frontend Rendering)
+        function displayResults(recipes) {
+            const resultsContainer = document.getElementById('results-container');
+            let htmlContent = '<h2>Matching Recipes:</h2>';
+
+            if (recipes.length === 0) {
+                htmlContent += '<p style="color: red;">❌ No recipes matched all your constraints. Try relaxing your time limit or ingredients.</p>';
+            } else {
+                htmlContent += `<p style="color: green;">✅ Found ${recipes.length} perfect match(es)!</p>`;
+
+                recipes.forEach(recipe => {
+                    // Create ingredient list HTML
+                    const ingredientsList = '<ul>' + recipe.requiredIngredients.map(ing => `<li>${ing.charAt(0).toUpperCase() + ing.slice(1)}</li>`).join('') + '</ul>';
+                    
+                    // Create steps list HTML
+                    const stepsList = '<ol>' + recipe.steps.map(step => `<li>${step}</li>`).join('') + '</ol>';
+                    
+                    htmlContent += `
+                        <div class="recipe-card">
+                            <h3>${recipe.title}</h3>
+                            <div class="recipe-meta">
+                                <span>Cuisine: ${recipe.cuisine}</span>
+                                <span>Time: ${recipe.timeMinutes} mins</span>
+                                <span>Tags: ${recipe.tags.join(', ')}</span>
+                            </div>
+                            <div class="ingredients">
+                                <h4>Required Ingredients:</h4>
+                                ${ingredientsList}
+                            </div>
+                            <div class="steps">
+                                <h4>Instructions:</h4>
+                                ${stepsList}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            resultsContainer.innerHTML = htmlContent;
+        }
+    </script>
+</body>
+</html>
